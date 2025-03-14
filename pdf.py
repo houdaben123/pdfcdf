@@ -1,61 +1,61 @@
+import streamlit as st
 import numpy as np
-import matplotlib.pyplot as plt
 import scipy.stats as stats
-import streamlit as st  # إضافة مكتبة Streamlit
+import matplotlib.pyplot as plt
+import seaborn as sns
 
-# إنشاء الرسومات
-def plot_distribution(distribution_name, x_values, distributions):
-    fig, ax = plt.subplots(figsize=(6, 4))
+# إعداد الواجهة في Streamlit
+st.title("اختبار t الإحصائي")
 
-    for params, label in distributions:
-        pdf_values = params.pdf(x_values)
-        ax.plot(x_values, pdf_values, label=label)
+# اختيار نوع الاختبار
+test_type = st.radio("اختر نوع الاختبار:", 
+                     ["اختبار t لعينة واحدة", "اختبار t لعينتين مستقلتين", "اختبار t لعينتين مترابطتين"])
 
-    ax.set_title(f'PDF of {distribution_name}')
-    ax.legend()
+# إدخال البيانات
+if test_type == "اختبار t لعينة واحدة":
+    mu = st.number_input("أدخل القيمة الفرضية للمتوسط µ:", value=0.0)
+    sample_size = st.number_input("عدد القيم في العينة:", min_value=2, value=10)
+    sample = st.text_area("أدخل بيانات العينة (مفصولة بمسافات أو فواصل):", "10, 12, 9, 11, 8, 10, 13, 7, 12, 11")
+    sample = np.array([float(x) for x in sample.replace(',', ' ').split()])
     
-    # عرض الشكل في Streamlit
-    st.pyplot(fig)
+    if len(sample) > 1:
+        t_stat, p_value = stats.ttest_1samp(sample, mu)
+        st.write(f"**إحصائية t:** {t_stat:.4f}")
+        st.write(f"**قيمة p:** {p_value:.4f}")
+    
+elif test_type == "اختبار t لعينتين مستقلتين":
+    sample1 = st.text_area("أدخل بيانات العينة الأولى (مفصولة بمسافات أو فواصل):", "10, 12, 14, 11, 9, 13, 15")
+    sample2 = st.text_area("أدخل بيانات العينة الثانية (مفصولة بمسافات أو فواصل):", "9, 8, 7, 10, 11, 9, 6")
+    
+    sample1 = np.array([float(x) for x in sample1.replace(',', ' ').split()])
+    sample2 = np.array([float(x) for x in sample2.replace(',', ' ').split()])
+    
+    if len(sample1) > 1 and len(sample2) > 1:
+        t_stat, p_value = stats.ttest_ind(sample1, sample2, equal_var=False)
+        st.write(f"**إحصائية t:** {t_stat:.4f}")
+        st.write(f"**قيمة p:** {p_value:.4f}")
 
-# إعداد الصفحة في Streamlit
-st.title("Visualization of Probability Distributions")
+elif test_type == "اختبار t لعينتين مترابطتين":
+    sample1 = st.text_area("أدخل بيانات المجموعة الأولى (مفصولة بمسافات أو فواصل):", "10, 12, 14, 11, 9, 13, 15")
+    sample2 = st.text_area("أدخل بيانات المجموعة الثانية (مفصولة بمسافات أو فواصل):", "9, 11, 13, 10, 8, 12, 14")
+    
+    sample1 = np.array([float(x) for x in sample1.replace(',', ' ').split()])
+    sample2 = np.array([float(x) for x in sample2.replace(',', ' ').split()])
+    
+    if len(sample1) == len(sample2) and len(sample1) > 1:
+        t_stat, p_value = stats.ttest_rel(sample1, sample2)
+        st.write(f"**إحصائية t:** {t_stat:.4f}")
+        st.write(f"**قيمة p:** {p_value:.4f}")
+    else:
+        st.error("يجب أن تحتوي المجموعتان على نفس عدد القيم!")
 
-# التوزيع الطبيعي
-x = np.linspace(-4, 4, 1000)
-distributions = [(stats.norm(loc=mu, scale=sigma), f'μ={mu}, σ={sigma}') for mu, sigma in [(-1, 1), (0, 1), (1, 1), (0, 0.5), (0, 2)]]
-plot_distribution("Normal Distribution", x, distributions)
+# رسم التوزيع وإبراز t
+fig, ax = plt.subplots()
+x = np.linspace(-4, 4, 100)
+y = stats.t.pdf(x, df=10)  # توزيع t بدرجات حرية 10
+sns.lineplot(x=x, y=y, ax=ax, label="توزيع t")
 
-# التوزيع الطبيعي المعياري
-x = np.linspace(-4, 4, 1000)
-distributions = [(stats.norm(), 'Standard Normal')]
-plot_distribution("Standard Normal Distribution", x, distributions)
-
-# توزيع ستودنت
-x = np.linspace(-4, 4, 1000)
-distributions = [(stats.t(df=df), f'df={df}') for df in [1, 5, 10, 30, 50]]
-plot_distribution("Student's t-Distribution", x, distributions)
-
-# توزيع كاي مربع
-x = np.linspace(0, 10, 1000)
-distributions = [(stats.chi2(df=df), f'df={df}') for df in [1, 2, 3, 5, 10]]
-plot_distribution("Chi-Square Distribution", x, distributions)
-
-# توزيع فيشر
-x = np.linspace(0, 5, 1000)
-distributions = [(stats.f(df1=d1, df2=d2), f'df1={d1}, df2={d2}') for d1, d2 in [(1, 2), (2, 5), (5, 10), (10, 20), (20, 30)]]
-plot_distribution("F-Distribution", x, distributions)
-
-# التوزيع الأسي
-x = np.linspace(0, 5, 1000)
-distributions = [(stats.expon(scale=scale), f'λ={1/scale:.2f}') for scale in [0.5, 1, 2, 3, 4]]
-plot_distribution("Exponential Distribution", x, distributions)
-
-# توزيع غاما
-x = np.linspace(0, 10, 1000)
-distributions = [(stats.gamma(a=shape), f'k={shape}') for shape in [1, 2, 3, 5, 7]]
-plot_distribution("Gamma Distribution", x, distributions)
-
-# توزيع بيتا
-x = np.linspace(0, 1, 1000)
-distributions = [(stats.beta(a=a, b=b), f'α={a}, β={b}') for a, b in [(0.5, 0.5), (2, 2), (2, 5), (5, 1), (5, 5)]]
-plot_distribution("Beta Distribution", x, distributions)
+ax.axvline(x=t_stat, color='red', linestyle='--', label="قيمة t المحسوبة")
+ax.fill_between(x, 0, y, where=(x >= t_stat), color='red', alpha=0.3)
+ax.legend()
+st.pyplot(fig)
