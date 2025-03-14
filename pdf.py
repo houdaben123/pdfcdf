@@ -2,60 +2,93 @@ import streamlit as st
 import numpy as np
 import scipy.stats as stats
 import matplotlib.pyplot as plt
-import seaborn as sns
 
-# إعداد الواجهة في Streamlit
-st.title("اختبار t الإحصائي")
+# عنوان التطبيق
+st.title("اختبار الفرضيات حول الوسط الحسابي")
 
 # اختيار نوع الاختبار
-test_type = st.radio("اختر نوع الاختبار:", 
+test_type = st.radio("اختر نوع اختبار t:", 
                      ["اختبار t لعينة واحدة", "اختبار t لعينتين مستقلتين", "اختبار t لعينتين مترابطتين"])
 
-# إدخال البيانات
-if test_type == "اختبار t لعينة واحدة":
-    mu = st.number_input("أدخل القيمة الفرضية للمتوسط µ:", value=0.0)
-    sample_size = st.number_input("عدد القيم في العينة:", min_value=2, value=10)
-    sample = st.text_area("أدخل بيانات العينة (مفصولة بمسافات أو فواصل):", "10, 12, 9, 11, 8, 10, 13, 7, 12, 11")
-    sample = np.array([float(x) for x in sample.replace(',', ' ').split()])
-    
-    if len(sample) > 1:
-        t_stat, p_value = stats.ttest_1samp(sample, mu)
-        st.write(f"**إحصائية t:** {t_stat:.4f}")
-        st.write(f"**قيمة p:** {p_value:.4f}")
-    
-elif test_type == "اختبار t لعينتين مستقلتين":
-    sample1 = st.text_area("أدخل بيانات العينة الأولى (مفصولة بمسافات أو فواصل):", "10, 12, 14, 11, 9, 13, 15")
-    sample2 = st.text_area("أدخل بيانات العينة الثانية (مفصولة بمسافات أو فواصل):", "9, 8, 7, 10, 11, 9, 6")
-    
-    sample1 = np.array([float(x) for x in sample1.replace(',', ' ').split()])
-    sample2 = np.array([float(x) for x in sample2.replace(',', ' ').split()])
-    
-    if len(sample1) > 1 and len(sample2) > 1:
-        t_stat, p_value = stats.ttest_ind(sample1, sample2, equal_var=False)
-        st.write(f"**إحصائية t:** {t_stat:.4f}")
-        st.write(f"**قيمة p:** {p_value:.4f}")
+# اختيار طريقة إدخال البيانات
+input_method = st.radio("اختر طريقة إدخال البيانات:", 
+                        ["إدخال البيانات مباشرة", "إدخال الوسط الحسابي والتباين"])
 
-elif test_type == "اختبار t لعينتين مترابطتين":
-    sample1 = st.text_area("أدخل بيانات المجموعة الأولى (مفصولة بمسافات أو فواصل):", "10, 12, 14, 11, 9, 13, 15")
-    sample2 = st.text_area("أدخل بيانات المجموعة الثانية (مفصولة بمسافات أو فواصل):", "9, 11, 13, 10, 8, 12, 14")
-    
-    sample1 = np.array([float(x) for x in sample1.replace(',', ' ').split()])
-    sample2 = np.array([float(x) for x in sample2.replace(',', ' ').split()])
-    
-    if len(sample1) == len(sample2) and len(sample1) > 1:
-        t_stat, p_value = stats.ttest_rel(sample1, sample2)
-        st.write(f"**إحصائية t:** {t_stat:.4f}")
-        st.write(f"**قيمة p:** {p_value:.4f}")
+# متغيرات عامة
+alpha = st.number_input("مستوى الدلالة (α):", min_value=0.01, max_value=0.10, value=0.05, step=0.01)
+
+if input_method == "إدخال البيانات مباشرة":
+    # إدخال بيانات العينة (أو العينتين)
+    sample_1 = st.text_area("أدخل بيانات العينة الأولى (مفصولة بمسافات أو فواصل):", "").strip()
+    sample_1 = np.array([float(x) for x in sample_1.replace(",", " ").split() if x])
+
+    if test_type != "اختبار t لعينة واحدة":
+        sample_2 = st.text_area("أدخل بيانات العينة الثانية (مفصولة بمسافات أو فواصل):", "").strip()
+        sample_2 = np.array([float(x) for x in sample_2.replace(",", " ").split() if x])
+
+elif input_method == "إدخال الوسط الحسابي والتباين":
+    mean_1 = st.number_input("أدخل الوسط الحسابي للعينة الأولى:", value=0.0)
+    var_1 = st.number_input("أدخل التباين للعينة الأولى:", value=1.0)
+    size_1 = st.number_input("أدخل حجم العينة الأولى:", value=10, step=1, min_value=1)
+
+    if test_type != "اختبار t لعينة واحدة":
+        mean_2 = st.number_input("أدخل الوسط الحسابي للعينة الثانية:", value=0.0)
+        var_2 = st.number_input("أدخل التباين للعينة الثانية:", value=1.0)
+        size_2 = st.number_input("أدخل حجم العينة الثانية:", value=10, step=1, min_value=1)
+
+# زر لإجراء الاختبار
+if st.button("إجراء الاختبار"):
+    if input_method == "إدخال البيانات مباشرة" and len(sample_1) == 0:
+        st.error("يرجى إدخال بيانات العينة.")
     else:
-        st.error("يجب أن تحتوي المجموعتان على نفس عدد القيم!")
+        if test_type == "اختبار t لعينة واحدة":
+            mu0 = st.number_input("أدخل الوسط الحسابي المفترض تحت H0:", value=0.0)
 
-# رسم التوزيع وإبراز t
-fig, ax = plt.subplots()
-x = np.linspace(-4, 4, 100)
-y = stats.t.pdf(x, df=10)  # توزيع t بدرجات حرية 10
-sns.lineplot(x=x, y=y, ax=ax, label="توزيع t")
+            if input_method == "إدخال البيانات مباشرة":
+                t_stat, p_value = stats.ttest_1samp(sample_1, mu0)
+            else:
+                se = np.sqrt(var_1 / size_1)
+                t_stat = (mean_1 - mu0) / se
+                df = size_1 - 1
+                p_value = 2 * (1 - stats.t.cdf(abs(t_stat), df))
 
-ax.axvline(x=t_stat, color='red', linestyle='--', label="قيمة t المحسوبة")
-ax.fill_between(x, 0, y, where=(x >= t_stat), color='red', alpha=0.3)
-ax.legend()
-st.pyplot(fig)
+        elif test_type == "اختبار t لعينتين مستقلتين":
+            if input_method == "إدخال البيانات مباشرة":
+                t_stat, p_value = stats.ttest_ind(sample_1, sample_2, equal_var=False)
+            else:
+                se = np.sqrt(var_1 / size_1 + var_2 / size_2)
+                t_stat = (mean_1 - mean_2) / se
+                df = ((var_1 / size_1 + var_2 / size_2) ** 2) / ((var_1 / size_1) ** 2 / (size_1 - 1) + (var_2 / size_2) ** 2 / (size_2 - 1))
+                p_value = 2 * (1 - stats.t.cdf(abs(t_stat), df))
+
+        elif test_type == "اختبار t لعينتين مترابطتين":
+            if input_method == "إدخال البيانات مباشرة":
+                t_stat, p_value = stats.ttest_rel(sample_1, sample_2)
+            else:
+                st.error("لا يمكن استخدام هذه الطريقة لاختبار عينتين مترابطتين. أدخل البيانات مباشرة.")
+
+        # عرض النتائج
+        st.write(f"إحصائية t: {t_stat:.4f}")
+        st.write(f"القيمة الاحتمالية (p-value): {p_value:.4f}")
+
+        if p_value < alpha:
+            st.success("نرفض الفرضية الصفرية (H0). يوجد فرق ذو دلالة إحصائية.")
+        else:
+            st.info("لا نرفض الفرضية الصفرية (H0). لا يوجد فرق ذو دلالة إحصائية.")
+
+        # رسم التوزيع الطبيعي مع إحصائية t
+        fig, ax = plt.subplots(figsize=(6, 4))
+        x = np.linspace(-4, 4, 1000)
+        y = stats.t.pdf(x, df if 'df' in locals() else len(sample_1) - 1)
+
+        ax.plot(x, y, label="توزيع t", color="blue")
+        ax.axvline(t_stat, color="red", linestyle="--", label=f"t-stat = {t_stat:.4f}")
+
+        if p_value < alpha:
+            ax.fill_between(x, y, where=(x > t_stat) | (x < -t_stat), color="red", alpha=0.3)
+        else:
+            ax.fill_between(x, y, where=(x > t_stat) | (x < -t_stat), color="gray", alpha=0.3)
+
+        ax.set_title("التوزيع الاحتمالي واختبار t")
+        ax.legend()
+        st.pyplot(fig)
