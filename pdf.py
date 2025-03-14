@@ -1,79 +1,61 @@
 import numpy as np
 import matplotlib.pyplot as plt
 import scipy.stats as stats
+import streamlit as st  # إضافة مكتبة Streamlit
 
-# إعداد التوزيعات والمعالم الخاصة بها
-distributions = {
-    "Normal": [(0, 1), (0, 2), (-2, 1), (2, 0.5), (1, 1.5)],  # (mean, std)
-    "Standard Normal": [(0, 1)],
-    "Student's t": [1, 2, 5, 10, 30],  # درجات الحرية
-    "Chi-Square": [1, 2, 5, 10, 30],  # درجات الحرية
-    "F-Distribution": [(5, 2), (10, 5), (20, 10), (30, 15), (40, 20)],  # (df1, df2)
-    "Exponential": [0.5, 1, 2, 3, 5],  # معدل λ
-    "Gamma": [(1, 2), (2, 2), (3, 1), (5, 1), (7, 0.5)],  # (shape, scale)
-    "Beta": [(0.5, 0.5), (1, 2), (2, 2), (2, 5), (5, 1)]  # (alpha, beta)
-}
+# إنشاء الرسومات
+def plot_distribution(distribution_name, x_values, distributions):
+    fig, ax = plt.subplots(figsize=(6, 4))
 
-# إعداد الأشكال
-fig, axes = plt.subplots(len(distributions), 2, figsize=(12, 20))
-x = np.linspace(-5, 5, 1000)  # نطاق القيم
+    for params, label in distributions:
+        pdf_values = params.pdf(x_values)
+        ax.plot(x_values, pdf_values, label=label)
 
-# رسم التوزيعات
-for i, (dist, params) in enumerate(distributions.items()):
-    ax_pdf = axes[i, 0]
-    ax_cdf = axes[i, 1]
+    ax.set_title(f'PDF of {distribution_name}')
+    ax.legend()
     
-    for param in params:
-        if dist == "Normal":
-            pdf = stats.norm.pdf(x, loc=param[0], scale=param[1])
-            cdf = stats.norm.cdf(x, loc=param[0], scale=param[1])
-            label = f"μ={param[0]}, σ={param[1]}"
-        elif dist == "Standard Normal":
-            pdf = stats.norm.pdf(x)
-            cdf = stats.norm.cdf(x)
-            label = "μ=0, σ=1"
-        elif dist == "Student's t":
-            pdf = stats.t.pdf(x, df=param)
-            cdf = stats.t.cdf(x, df=param)
-            label = f"df={param}"
-        elif dist == "Chi-Square":
-            x = np.linspace(0, 10, 1000)
-            pdf = stats.chi2.pdf(x, df=param)
-            cdf = stats.chi2.cdf(x, df=param)
-            label = f"df={param}"
-        elif dist == "F-Distribution":
-            x = np.linspace(0, 5, 1000)
-            pdf = stats.f.pdf(x, dfn=param[0], dfd=param[1])
-            cdf = stats.f.cdf(x, dfn=param[0], dfd=param[1])
-            label = f"df1={param[0]}, df2={param[1]}"
-        elif dist == "Exponential":
-            x = np.linspace(0, 5, 1000)
-            pdf = stats.expon.pdf(x, scale=1/param)
-            cdf = stats.expon.cdf(x, scale=1/param)
-            label = f"λ={param}"
-        elif dist == "Gamma":
-            x = np.linspace(0, 10, 1000)
-            pdf = stats.gamma.pdf(x, a=param[0], scale=param[1])
-            cdf = stats.gamma.cdf(x, a=param[0], scale=param[1])
-            label = f"shape={param[0]}, scale={param[1]}"
-        elif dist == "Beta":
-            x = np.linspace(0, 1, 1000)
-            pdf = stats.beta.pdf(x, a=param[0], b=param[1])
-            cdf = stats.beta.cdf(x, a=param[0], b=param[1])
-            label = f"α={param[0]}, β={param[1]}"
+    # عرض الشكل في Streamlit
+    st.pyplot(fig)
 
-        # رسم المنحنيات
-        ax_pdf.plot(x, pdf, label=label)
-        ax_cdf.plot(x, cdf, label=label)
+# إعداد الصفحة في Streamlit
+st.title("Visualization of Probability Distributions")
 
-    # تنسيق الرسومات
-    ax_pdf.set_title(f"{dist} PDF")
-    ax_cdf.set_title(f"{dist} CDF")
-    ax_pdf.legend()
-    ax_cdf.legend()
-    ax_pdf.grid()
-    ax_cdf.grid()
+# التوزيع الطبيعي
+x = np.linspace(-4, 4, 1000)
+distributions = [(stats.norm(loc=mu, scale=sigma), f'μ={mu}, σ={sigma}') for mu, sigma in [(-1, 1), (0, 1), (1, 1), (0, 0.5), (0, 2)]]
+plot_distribution("Normal Distribution", x, distributions)
 
-# عرض الأشكال
-plt.tight_layout()
-plt.show()
+# التوزيع الطبيعي المعياري
+x = np.linspace(-4, 4, 1000)
+distributions = [(stats.norm(), 'Standard Normal')]
+plot_distribution("Standard Normal Distribution", x, distributions)
+
+# توزيع ستودنت
+x = np.linspace(-4, 4, 1000)
+distributions = [(stats.t(df=df), f'df={df}') for df in [1, 5, 10, 30, 50]]
+plot_distribution("Student's t-Distribution", x, distributions)
+
+# توزيع كاي مربع
+x = np.linspace(0, 10, 1000)
+distributions = [(stats.chi2(df=df), f'df={df}') for df in [1, 2, 3, 5, 10]]
+plot_distribution("Chi-Square Distribution", x, distributions)
+
+# توزيع فيشر
+x = np.linspace(0, 5, 1000)
+distributions = [(stats.f(df1=d1, df2=d2), f'df1={d1}, df2={d2}') for d1, d2 in [(1, 2), (2, 5), (5, 10), (10, 20), (20, 30)]]
+plot_distribution("F-Distribution", x, distributions)
+
+# التوزيع الأسي
+x = np.linspace(0, 5, 1000)
+distributions = [(stats.expon(scale=scale), f'λ={1/scale:.2f}') for scale in [0.5, 1, 2, 3, 4]]
+plot_distribution("Exponential Distribution", x, distributions)
+
+# توزيع غاما
+x = np.linspace(0, 10, 1000)
+distributions = [(stats.gamma(a=shape), f'k={shape}') for shape in [1, 2, 3, 5, 7]]
+plot_distribution("Gamma Distribution", x, distributions)
+
+# توزيع بيتا
+x = np.linspace(0, 1, 1000)
+distributions = [(stats.beta(a=a, b=b), f'α={a}, β={b}') for a, b in [(0.5, 0.5), (2, 2), (2, 5), (5, 1), (5, 5)]]
+plot_distribution("Beta Distribution", x, distributions)
